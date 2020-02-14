@@ -22,7 +22,7 @@ lightbox.hm            80 open
 ```
 ## To do
 
-Need to do sorted screen output.
+
 
 
 
