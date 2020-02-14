@@ -2,7 +2,6 @@
 
 import sys
 import socket
-from datetime import datetime
 import yaml
 import threading
 
@@ -12,11 +11,8 @@ data = yaml.safe_load(file)
 ip_list = list(data.keys())
 ports_list = list(data.values())
 
-now = datetime.now()
-dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-
 def port_scan(ip, ports):
-    """ Ports scan for some ip address of network host """
+    """ Check sockets for some ip address of network host """
 
     try:
         for port in ports:
@@ -37,18 +33,13 @@ def port_scan(ip, ports):
         print('Could not connect to server.')
 
 def main(ip_list, ports_list):
-    """ Ports scan for list of ip addresses of network hosts """
-
-    #print('Scanned at {}'.format(dt_string))
-    #print('-' * 30)
+    """ Check sockets status for list of ip addresses """
 
     for i in range(len(ip_list)):
         ip = ip_list[i]
         ports = ports_list[i]
-        #port_scan(ip, ports)
         t = threading.Thread(target=port_scan, kwargs={'ip': ip,'ports': ports})
         t.start()
-        #print('-' * 30)
 
 if __name__ == '__main__':
     main(ip_list, ports_list)
