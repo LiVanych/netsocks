@@ -38,8 +38,8 @@ def main(ip_list, ports_list):
     for i in range(len(ip_list)):
         ip = ip_list[i]
         ports = ports_list[i]
-        t = threading.Thread(target=port_scan, kwargs={'ip': ip,'ports': ports})
-        t.start()
+        port_scan_threading = threading.Thread(target=port_scan, kwargs={'ip': ip,'ports': ports})
+        port_scan_threading.start()
 
 if __name__ == '__main__':
     main(ip_list, ports_list)
