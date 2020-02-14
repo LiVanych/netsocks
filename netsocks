@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+
+import sys
+import socket
+from datetime import datetime
+import yaml
+import threading
+
+file = open('config.yml', 'r')
+dict = yaml.safe_load(file)
+
+ip_list = list(dict.keys())
+ports_list = list(dict.values())
+
+now = datetime.now()
+dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+
+def port_scan(ip, ports):
+    """ Ports scan for some ip address of network host """
+
+    try:
+        for port in ports:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(0.5)
+            conn = sock.connect_ex((ip, port))
+            if conn == 0:
+                print('{0:<20}{1:>5} open'.format(ip, port))
+            else:
+                print('{0:<20}{1:>5} closed'.format(ip, port))
+            sock.close()
+    except KeyboardInterrupt:
+        print("Interrupted by Ctrl+C")
+        sys.exit()
+    except socket.gaierror:
+        print('Hostname could not be resolved.')
+    except socket.error:
+        print('Could not connect to server.')
+
+def main(ip_list, ports_list):
+    """ Ports scan for list of ip addresses of network hosts """
+
+    #print('Scanned at {}'.format(dt_string))
+    #print('-' * 30)
+
+    for i in range(len(ip_list)):
+        ip = ip_list[i]
+        ports = ports_list[i]
+        #port_scan(ip, ports)
+        t = threading.Thread(target=port_scan, kwargs={'ip': ip,'ports': ports})
+        t.start()
+        #print('-' * 30)
+
+if __name__ == '__main__':
+    main(ip_list, ports_list)
+
