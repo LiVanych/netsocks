@@ -4,6 +4,10 @@ import sys
 import socket
 import yaml
 import threading
+from datetime import datetime
+
+now = datetime.now()
+dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
 
 file = open('config.yml', 'r')
 data = yaml.safe_load(file)
@@ -35,11 +39,16 @@ def port_scan(ip, ports):
 def main(ip_list, ports_list):
     """ Check sockets status for list of ip addresses """
 
+    print('Checked at {}'.format(dt_string))
+    print('-' * 30)
+
     for i in range(len(ip_list)):
         ip = ip_list[i]
         ports = ports_list[i]
         port_scan_threading = threading.Thread(target=port_scan, kwargs={'ip': ip,'ports': ports})
         port_scan_threading.start()
+        port_scan_threading.join()
+        print('-' * 30)
 
 if __name__ == '__main__':
     main(ip_list, ports_list)
