@@ -1,8 +1,8 @@
 # netsocks
 
-Simple network socket analyzer.
-It is checking list of network sockets from file called `config.yml`.
-Requirements: Python3, PyYaml
+Simple network socket status checker.</br>
+It is checking list of network sockets from file called `config.yml`.</br>
+Requirements: Python3, PyYaml.
 
 ```sh
 $ ./netsocks | sort
@@ -24,5 +24,8 @@ lightbox.hm            80 open
 
 Need to do sorted screen output.
 
-_________________________________________________________________________________________________
-Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/> GPL Version 3,  29 June 2007
+
+
+
+Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/> </br>
+GPL Version 3,  29 June 2007
