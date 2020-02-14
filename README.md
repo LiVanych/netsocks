@@ -5,7 +5,7 @@ It is checking list of network sockets from file called `config.yml`.</br>
 Requirements: Python3, PyYaml.
 
 ```sh
-$ ./netsocks | sort
+$ ./netsocks
 dl-router.hm          443 open
 lightbox.hm           111 open
 lightbox.hm          2049 open
