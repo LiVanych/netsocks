@@ -7,10 +7,10 @@ import yaml
 import threading
 
 file = open('config.yml', 'r')
-dict = yaml.safe_load(file)
+data = yaml.safe_load(file)
 
-ip_list = list(dict.keys())
-ports_list = list(dict.values())
+ip_list = list(data.keys())
+ports_list = list(data.values())
 
 now = datetime.now()
 dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
