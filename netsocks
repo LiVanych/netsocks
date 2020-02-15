@@ -15,18 +15,22 @@ data = yaml.safe_load(file)
 ip_list = list(data.keys())
 ports_list = list(data.values())
 
+result = ''
+
 def port_scan(ip, ports):
     """ Check sockets for some ip address of network host """
 
+    global result
     try:
+
         for port in ports:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(0.5)
             conn = sock.connect_ex((ip, port))
             if conn == 0:
-                print('{0:<20}{1:>5} open'.format(ip, port))
+                result += ('{0:<20}{1:>5} open\n'.format(ip, port))
             else:
-                print('{0:<20}{1:>5} closed'.format(ip, port))
+                result += ('{0:<20}{1:>5} closed\n'.format(ip, port))
             sock.close()
     except KeyboardInterrupt:
         print("Interrupted by Ctrl+C")
@@ -39,8 +43,9 @@ def port_scan(ip, ports):
 def main(ip_list, ports_list):
     """ Check sockets status for list of ip addresses """
 
-    print('Checked at {}'.format(dt_string))
-    print('-' * 30)
+    global result
+    result += ('Checked at {}\n'.format(dt_string))
+    result += ("-" * 30 + "\n")
 
     for i in range(len(ip_list)):
         ip = ip_list[i]
@@ -48,7 +53,10 @@ def main(ip_list, ports_list):
         port_scan_threading = threading.Thread(target=port_scan, kwargs={'ip': ip,'ports': ports})
         port_scan_threading.start()
         port_scan_threading.join()
-        print('-' * 30)
+        result += ("-" * 30 + "\n")
+
+    print(result)
+
 
 if __name__ == '__main__':
     main(ip_list, ports_list)
