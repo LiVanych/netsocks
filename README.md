@@ -1,7 +1,7 @@
 # netsocks
 
 Simple network socket status checker.</br>
-It is checking list of network sockets from file called `config.yml`.</br>
+It is checking list of network sockets from file called `netsocks.yml`.</br>
 Requirements: Python3, PyYaml.
 
 ```sh
