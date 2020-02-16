@@ -5,24 +5,23 @@ It is checking list of network sockets from file called `config.yml`.</br>
 Requirements: Python3, PyYaml.
 
 ```sh
-$ ./netsocks
-dl-router.hm          443 open
-lightbox.hm           111 open
-lightbox.hm          2049 open
-lightbox.hm            21 open
-lightbox.hm            22 open
-lightbox.hm          4321 open
-lightbox.hm            53 open
-lightbox.hm           631 open
-lightbox.hm          8080 open
-lightbox.hm          8081 open
-lightbox.hm          8083 open
-lightbox.hm            80 open
-...
+ |██████████████████████| 100.0% 
+Checked at 16/02/2020 10:06:02
+------------------------------
+google.com             80 open
+google.com            443 open
+------------------------------
+1.1.1.1                53 open
+------------------------------
+gmail.com              80 open
+gmail.com             443 open
+------------------------------
+8.8.8.8                53 open
+------------------------------
 ```
 ## To do
 
-
+Next task is groups of hosts in YAML structure.
 
 
 
