@@ -42,7 +42,7 @@ def printProgressBar (iteration, total,
         print()
 
 def port_scan(ip, ports):
-    """ Check sockets for some ip address of network host """
+    """ Check sockets for some one ip address of network host """
 
     global ports_scan_result
 
