@@ -5,6 +5,7 @@ It is checking list of network sockets from file called `netsocks.yml`.</br>
 Requirements: Python3, PyYaml.
 
 ```sh
+$ ./netsocks
  |██████████████████████| 100.0% 
 Checked at 16/02/2020 10:06:02
 ------------------------------
