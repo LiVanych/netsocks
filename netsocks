@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 import socket
 import yaml
@@ -9,7 +10,8 @@ from datetime import datetime
 now = datetime.now()
 dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
 
-file = open('netsocks.yml', 'r')
+script_path = os.path.realpath(__file__)
+file = open(script_path + ".yml", 'r')
 data = yaml.safe_load(file)
 
 ip_list = list(data.keys())
