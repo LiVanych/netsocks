@@ -1,16 +1,31 @@
 #!/usr/bin/env python3
 
-"""Usage:
-        netsocks [-g group][-L group][-al][-h,--help]
-
-   Options:
-       -a            to check sockets for all host groups
-       -g <group>    to check sockets for selected group of hosts
-       -l            print list of all existing groups
-       -L <group>    print list of hosts in specific group name
-       -h --help     this help message
-
 """
+Usage:
+ netsocks [HOST PORT]
+ netsocks [-g name]
+ netsocks [-a][-l][-h]
+ netsocks [-L name]
+ netsocks [-H host][-H ip]
+ netsocks [-c file [-a][-l]]
+ netsocks [-c file [-g group]]
+ netsocks [-c file [-L group]]
+ netsocks [-c file [-H host]]
+
+Arguments:
+ HOST       hostname or IP
+ PORT       TCP port
+
+Options:
+ -a         all sockets scan
+ -g <name>  one group checking
+ -H <host>  one host socks check
+ -l         groups list printing
+ -L <name>  one group hosts list
+ -c <file>  custom config file
+ -h         this help message
+"""
+
 import os
 import sys
 import socket
@@ -19,66 +34,11 @@ import threading
 from datetime import datetime
 from docopt import docopt
 
-now = datetime.now()
-dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
 
-config_db = {}
-all_host_groups = {}
-
-data = {}
-
-ports_scan_result = ''
-
-def get_config_file():
-    """ default config file is expected in same directories """
-
-    script_path = os.path.realpath(__file__)
-    default_config_file = script_path + ".yml"
-    return default_config_file
-
-def get_config(config=get_config_file()):
-    """ Getting config from a YAML file """
-
-    global config_db
-    try:
-        with open(config, 'r') as stream:
-            config_db = yaml.safe_load(stream)
-    except yaml.YAMLError as exc:
-            print(exc)
-            sys.exit()
-    except FileNotFoundError:
-            print("Not found such file or directory: {}".format(config))
-            sys.exit()
-    return config_db
-
-def get_all_host_groups():
-    """ Getting data of all exists host groups for their socks checking """
-
-    global all_host_groups
-
-    groups_list = list(config_db.keys())
-    for i in range(len(groups_list)):
-        added_group = config_db.get(groups_list[i])
-        all_host_groups = {**all_host_groups, **added_group}
-    return all_host_groups
-
-def get_all_groups_list():
-    """ Printing list of all exists groups """
-
-    groups_list = list(config_db.keys())
-    for i in range(len(groups_list)):
-        print(groups_list[i])
-
-def get_all_hosts_list(group):
-    """ View all hosts in specific group """
-
-    try:
-        hosts_list = list(group.keys())
-        for i in range(len(hosts_list)):
-            print(hosts_list[i])
-    except AttributeError:
-        print("Not found such group, correct your input and try again...")
-        get_all_groups_list()
+def time_now():
+    now = datetime.now()
+    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+    return dt_string
 
 def printProgressBar (iteration, total,
                       prefix = '', suffix = '', decimals = 1,
@@ -103,6 +63,80 @@ def printProgressBar (iteration, total,
     if iteration == total:
         print()
 
+def get_config_file():
+    """ default config file is expected in same directories """
+
+    script_path = os.path.realpath(__file__)
+    default_config_file = script_path + ".yml"
+    return default_config_file
+
+def get_config(config=get_config_file()):
+    """ Getting config from a YAML file """
+
+    global config_db
+    try:
+        with open(config, 'r') as stream:
+            config_db = yaml.safe_load(stream)
+    except yaml.YAMLError as exc:
+            print(exc)
+            sys.exit()
+    except FileNotFoundError:
+            print("Not found such file or directory: {}".format(config))
+            sys.exit()
+    return config_db
+
+def get_all_hosts():
+    """ Getting data of all exists host groups for their socks checking """
+
+    global all_host_groups
+
+    groups_list = list(config_db.keys())
+    for i in range(len(groups_list)):
+        added_group = config_db.get(groups_list[i])
+        all_host_groups = {**all_host_groups, **added_group}
+    return all_host_groups
+
+def get_all_groups_list():
+    """ Printing list of all exists groups """
+
+    groups_list = list(config_db.keys())
+    for i in range(len(groups_list)):
+        print(groups_list[i])
+
+def get_all_hostnames_list(group):
+    """ View all hosts in specific group """
+
+    try:
+        hosts_list = list(group.keys())
+        for i in range(len(hosts_list)):
+            print(hosts_list[i])
+    except AttributeError:
+        print("Not found such group, correct your input and try again...")
+        get_all_groups_list()
+
+def get_ip_list(data):
+    """ Getting ip or hosts list from database """
+
+    try:
+        ip_list = list(data.keys())
+    except AttributeError:
+        print("Not found such group, correct your input and try again...")
+        get_all_groups_list()
+        sys.exit()
+    return ip_list
+
+def get_ports_list(data):
+    """ Obtaining ports list from database """
+
+    return list(data.values())
+
+def ip_list_length(data):
+    """ Defining ip list length """
+
+    ip_list = get_ip_list(data)
+    return len(ip_list)
+
+
 def port_scan(ip, ports):
     """ Check sockets for some one ip address of network host """
 
@@ -123,16 +157,37 @@ def port_scan(ip, ports):
         except socket.error:
             print('Could not connect to server.')
 
+def ports_scan_host_only(host):
+    """ Scan ports for only one host from database """
+
+    ip_list = list(host)
+    if not ip_list[0] in get_all_hosts():
+        print("Not found in database...")
+        return
+    ports_list = get_all_hosts().get(ip_list[0])
+    port_scan(ip_list[0], ports_list)
+    print(ports_scan_result)
+
+def one_socket_scan(host_cli_arg, port_cli_arg):
+    """ Scan one socket from command line arguments """
+
+    port_list = []
+    host = str(host_cli_arg)
+    port = int(port_cli_arg)
+    port_list.append(port)
+    port_scan(host, port_list)
+    print(ports_scan_result)
+
 def main(ip_list, ports_list):
     """ Check sockets status for list of ip addresses """
 
     global ports_scan_result
-    ports_scan_result += ('Checked at {}\n'.format(dt_string))
+    ports_scan_result += ('Checked at {}\n'.format(time_now()))
     ports_scan_result += ("-" * 30 + "\n")
 
     # Initial call to print 0% progress
-    printProgressBar(0, ip_list_length, length = 22)
-    for i in range(ip_list_length):
+    printProgressBar(0, ip_list_length(data), length = 22)
+    for i in range(ip_list_length(data)):
         try:
             ip = ip_list[i]
             ports = ports_list[i]
@@ -141,9 +196,9 @@ def main(ip_list, ports_list):
             port_scan_threading.start()
             port_scan_threading.join()
             ports_scan_result += ("-" * 30 + "\n")
-            printProgressBar(i + 1, ip_list_length, length = 22)
+            printProgressBar(i + 1, ip_list_length(data), length = 22)
         except KeyboardInterrupt:
-            print("Interrupted by Ctrl+C")
+            print("Script executing interrupted by user!")
             sys.exit()
 
     print(ports_scan_result)
@@ -151,32 +206,41 @@ def main(ip_list, ports_list):
 
 if __name__ == '__main__':
 
-    get_config()
+    config_db = {}
+    data = {}
+    all_host_groups = {}
+
+    ports_scan_result = ''
 
     args = docopt(__doc__)
 
-    if args['-L']:
-        get_all_hosts_list(config_db.get(args['-L']))
+    if not args['-c']:
+        get_config()
+    else:
+        get_config(args['-c'])
+
+    if args['HOST'] and args['PORT']:
+        one_socket_scan(args['HOST'], args['PORT'])
+        sys.exit()
+    elif args['-a']:
+        data = get_all_hosts()
+    elif args['-g']:
+        data = config_db.get(args['-g'])
+    elif args['-H']:
+        ports_scan_host_only(args['-H'])
         sys.exit()
     elif args['-l']:
         get_all_groups_list()
         sys.exit()
-    elif args['-g']:
-        data = config_db.get(args['-g'])
-    elif args['-a']:
-        data = get_all_host_groups()
+    elif args['-L']:
+        get_all_hostnames_list(config_db.get(args['-L']))
+        sys.exit()
     else:
         print(__doc__)
         sys.exit()
 
-    try:
-        ip_list = list(data.keys())
-    except AttributeError:
-        print("Not found such group, correct your input and try again...")
-        get_all_groups_list()
-        sys.exit()
-    ports_list = list(data.values())
-    ip_list_length = len(ip_list)
+    ip_list = get_ip_list(data)
+    ports_list = get_ports_list(data)
 
     main(ip_list, ports_list)
 
