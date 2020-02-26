@@ -3,13 +3,15 @@
 """
 Usage:
  netsocks [HOST PORT]
- netsocks [-g group]
+ netsocks [-g group,group]
  netsocks [-a][-l][-h]
  netsocks [-X group,group]
  netsocks [-x host,host]
  netsocks [-L group]
- netsocks [-H host][-H ip]
+ netsocks [-H host]
  netsocks [-c file [-a][-l]]
+ netsocks [-c file [-x host]]
+ netsocks [-c file [-X group]]
  netsocks [-c file [-g group]]
  netsocks [-c file [-L group]]
  netsocks [-c file [-H host]]
@@ -29,7 +31,6 @@ Options:
  -c <file>  custom config file
  -h,--help  this help message
 """
-
 import os
 import sys
 import socket
@@ -37,7 +38,6 @@ import oyaml as yaml
 import threading
 from datetime import datetime
 from docopt import docopt
-
 
 def time_now():
     now = datetime.now()
@@ -92,42 +92,54 @@ def get_config(config=get_config_file()):
 def get_all_hosts():
     """ Getting data of all exists host groups for their socks checking """
 
-    global all_host_groups
+    common_data_set = {}
 
     groups_list = list(config_db.keys())
     for i in range(len(groups_list)):
         added_group = config_db.get(groups_list[i])
-        all_host_groups = {**all_host_groups, **added_group}
-    return all_host_groups
+        common_data_set = {**common_data_set, **added_group}
+    return common_data_set
 
-def get_all_data_except(excluded_groups):
+def get_specific_groups(groups):
+    """ Obtain specific host groups by cli arguments """
+
+    common_data_set = {}
+
+    groups_list = groups.split(',')
+
+    # Summarize all group lists to one dictionary
+    for i in range(len(groups_list)):
+        added_group = config_db.get(groups_list[i])
+        common_data_set = {**common_data_set, **added_group}
+    return common_data_set
+
+def get_all_data_except(excepted_groups):
     """ Obtain data of all groups except one or more from them """
-    '''
-        EXAMPLE how to need make
-        ========================
-        for i in range(len(list2)):
-    ...:     item = list2[i]
-    ...:     for j in range(len(list1)):
-    ...:         if list1[j] == item:
-    ...:             list1.remove(list1[j])
-    '''
-    groups_list = list(config_db.keys())
-    for group in excluded_groups.split(','):
-        group_list.remove(excluded_groups.split(',')[group])
 
+    common_data_set = {}
+
+    # Exclude host groups defined by cli arguments
+    groups_list = list(config_db.keys())
+    exception_list = excepted_groups.split(',')
+    for excepted_group in range(len(exception_list)):
+        item = exception_list[excepted_group]
+        if item in groups_list:
+            groups_list.remove(item)
+
+    # Summarize all group lists to one dictionary
     for i in range(len(groups_list)):
         added_group = config_db.get(groups_list[i])
-        host_groups = {**host_groups, **added_group}
-    return host_groups
+        common_data_set = {**common_data_set, **added_group}
+    return common_data_set
 
-def get_all_hosts_except(excluded_data):
+def get_all_hosts_except(excluded_hosts):
     """ Getting all hosts except one or more of them """
 
-    data = get_all_hosts()
-    for excluded_host in excluded_data.split(','):
-        if excluded_host in data:
-            del data[excluded_host]
-    return data
+    common_data_set = get_all_hosts()
+    for excluded_host in excluded_hosts.split(','):
+        if excluded_host in common_data_set:
+            del common_data_set[excluded_host]
+    return common_data_set
 
 def get_all_groups_list():
     """ Printing list of all exists groups """
@@ -169,7 +181,6 @@ def ip_list_length(data):
     ip_list = get_ip_list(data)
     return len(ip_list)
 
-
 def port_scan(ip, ports):
     """ Check sockets for some one ip address of network host """
 
@@ -190,15 +201,20 @@ def port_scan(ip, ports):
         except socket.error:
             print('Could not connect to server.')
 
-def ports_scan_host_only(host):
-    """ Scan ports for only one host from database """
+def ports_scan_host_only(host_list):
+    """ Scan ports for one or more hosts from database """
 
-    ip_list = list(host)
-    if not ip_list[0] in get_all_hosts():
-        print("Not found in database...")
-        return
-    ports_list = get_all_hosts().get(ip_list[0])
-    port_scan(ip_list[0], ports_list)
+    global ports_scan_result
+    ports_scan_result += ('Checked at {}\n'.format(time_now()))
+    ports_scan_result += ("-" * 30 + "\n")
+
+    for host in host_list.split(','):
+        if not host in get_all_hosts():
+            print("Not found in database...")
+            return
+        ports_list = get_all_hosts().get(host)
+        port_scan(host, ports_list)
+        ports_scan_result += ("-" * 30 + "\n")
     print(ports_scan_result)
 
 def one_socket_scan(host_cli_arg, port_cli_arg):
@@ -236,15 +252,10 @@ def main(ip_list, ports_list):
 
     print(ports_scan_result)
 
-
 if __name__ == '__main__':
 
     config_db = {}
-    data = {}
-    all_host_groups = {}
-
     ports_scan_result = ''
-
     args = docopt(__doc__)
 
     if not args['-c']:
@@ -257,10 +268,12 @@ if __name__ == '__main__':
         sys.exit()
     elif args['-a']:
         data = get_all_hosts()
+    elif args['-X']:
+        data = get_all_data_except(args['-X'])
     elif args['-x']:
         data = get_all_hosts_except(args['-x'])
     elif args['-g']:
-        data = config_db.get(args['-g'])
+        data = get_specific_groups(args['-g'])
     elif args['-H']:
         ports_scan_host_only(args['-H'])
         sys.exit()
