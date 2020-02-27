@@ -160,34 +160,6 @@ corp_net
 home_land
 public
 ```
-##Package structure
-```sh
-# Utils module
-def time_now()
-def printProgressBar (iteration, total,...)
-# Configuration module
-def get_config_file()
-def get_config_data(config=get_config_file())
-# Data handlers module
-def get_common_data_set(groups_list)
-def get_all_hosts_data()
-def get_specific_groups_data(groups)
-def get_data_by_groups_exclude(excluded_groups)
-def get_data_by_hosts_exclude(excluded_hosts)
-# Viewers module
-def get_all_groups_list()
-def get_all_hostnames_list(group)
-def get_ip_list(data)
-def get_ports_list(data)
-def ip_list_length(data)
-# Scanners module
-def host_scan(ip, ports)
-def ports_scan_hosts_from_database(host_list)
-def check_sockets_from_cli(host_cli_arg, port_cli_arg)
-# Main and cli :module
-def Docopt()
-def main(ip_list, ports_list)
-```
 
 Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/> </br>
 GPL Version 3,  29 June 2007
