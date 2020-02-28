@@ -137,7 +137,7 @@ def get_common_data_set(groups_list):
 
     common_data_set = {}
 
-    config_db = ConfigData(get_config_data()).configure()
+    config_db = BASE_CONFIG
     for item in groups_list:
         added_group = config_db.get(item)
         if isinstance(added_group, dict):
@@ -148,7 +148,7 @@ def get_common_data_set(groups_list):
 def get_all_hosts_data():
     """ Getting data of all exists host groups """
 
-    config_db = ConfigData(get_config_data()).configure()
+    config_db = BASE_CONFIG
     groups_list = list(config_db.keys())
     return get_common_data_set(groups_list)
 
@@ -163,7 +163,7 @@ def get_specific_groups_data(groups):
 def get_data_by_groups_exclude(excluded_groups):
     """ Obtain data of all groups exclude one or more from them """
 
-    config_db = ConfigData(get_config_data()).configure()
+    config_db = BASE_CONFIG
 
     groups_list = list(config_db.keys())
     exception_list = excluded_groups.split(',')
@@ -187,7 +187,7 @@ def get_data_by_hosts_exclude(excluded_hosts):
 def get_all_groups_list():
     """ Printing list of all exists groups """
 
-    config_db = ConfigData(get_config_data()).configure()
+    config_db = BASE_CONFIG
     if not config_db:
         return
     groups_list = list(config_db.keys())
@@ -210,7 +210,7 @@ def get_all_hostnames_list(group):
 def get_hosts_list_by_groups_list(groups_list):
     """ Getting list of hostnames by groups list """
 
-    config_db = ConfigData(get_config_data()).configure()
+    config_db = BASE_CONFIG
 
     for group in groups_list.split(','):
         get_all_hostnames_list(config_db.get(group))
@@ -300,7 +300,7 @@ def main(hosts_list, port_sets_list):
     RESULT.add('Checked at {}\n'.format(time_now()))
     RESULT.add("-" * 30 + "\n")
 
-    config_db = ConfigData(command_line_interface()).configure()
+    config_db = CURRENTLY_CONFIG
 
     if not get_hosts_list_length(config_db):
         print("Group or host name not found in configuration file...")
@@ -357,7 +357,14 @@ def command_line_interface(args=docopt(__doc__)):
 
 if __name__ == '__main__':
 
-    RESULT = ResultData()
-    CONFIG = ConfigData(command_line_interface()).configure()
+    ARGS = docopt(__doc__)
 
-    main(get_hosts_list(CONFIG), get_ports_list(CONFIG))
+    if not ARGS['-c']:
+        BASE_CONFIG = ConfigData(get_config_data()).configure()
+    else:
+        BASE_CONFIG = ConfigData(get_config_data(ARGS['-c'])).configure()
+
+    RESULT = ResultData()
+    CURRENTLY_CONFIG = ConfigData(command_line_interface()).configure()
+
+    main(get_hosts_list(CURRENTLY_CONFIG), get_ports_list(CURRENTLY_CONFIG))
