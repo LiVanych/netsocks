@@ -110,6 +110,8 @@ def get_common_data_set(groups_list):
 
     for item in groups_list:
         added_group = CONFIG_DB.get(item)
+        if not isinstance(added_group, dict):
+            return
         common_data_set = {**common_data_set, **added_group}
     return common_data_set
 
@@ -153,6 +155,8 @@ def get_data_by_hosts_exclude(excluded_hosts):
 def get_all_groups_list():
     """ Printing list of all exists groups """
 
+    if not CONFIG_DB:
+        return
     groups_list = list(CONFIG_DB.keys())
     for group in groups_list:
         print(group)
