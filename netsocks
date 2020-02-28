@@ -65,7 +65,7 @@ class DataIO:
 
     @report.setter
     def report(self, newline):
-        """ Agregation report lines """
+        """ Aggregation report lines """
         self._report += newline
 
 
