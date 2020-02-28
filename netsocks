@@ -302,7 +302,7 @@ def main(hosts_list, port_sets_list):
     DATA.report = ('Checked at {}\n'.format(time_now()))
     DATA.report = ("-" * 30 + "\n")
 
-    config_db = CURRENTLY_CONFIG
+    config_db = DATA.config
 
     if not get_hosts_list_length(config_db):
         print("Group or host name not found in configuration file...")
@@ -339,11 +339,11 @@ def command_line_interface(args=docopt(__doc__)):
         check_sockets_from_cli(args['HOST'], args['PORT'])
         sys.exit()
     elif args['-g']:
-        config_data = get_specific_groups_data(args['-g'])
+        DATA.config = get_specific_groups_data(args['-g'])
     elif args['-X']:
-        config_data = get_data_by_groups_exclude(args['-X'])
+        DATA.config = get_data_by_groups_exclude(args['-X'])
     elif args['-x']:
-        config_data = get_data_by_hosts_exclude(args['-x'])
+        DATA.config = get_data_by_hosts_exclude(args['-x'])
     elif args['-H']:
         ports_scan_hosts_from_database(args['-H'])
         sys.exit()
@@ -354,17 +354,17 @@ def command_line_interface(args=docopt(__doc__)):
         get_all_groups_list()
         sys.exit()
     elif args['-a']:
-        config_data = get_all_hosts_data()
+        DATA.config = get_all_hosts_data()
     else:
         print(__doc__)
         sys.exit()
 
-    return config_data
+    return DATA.config
 
 
 if __name__ == '__main__':
 
     DATA = DataIO()
-    CURRENTLY_CONFIG = command_line_interface()
+    command_line_interface()
 
-    main(get_hosts_list(CURRENTLY_CONFIG), get_ports_list(CURRENTLY_CONFIG))
+    main(get_hosts_list(DATA.config), get_ports_list(DATA.config))
