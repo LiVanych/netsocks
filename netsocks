@@ -31,6 +31,7 @@ Options:
  -c <file>  custom config file
  -h,--help  this help message
 """
+
 import os
 import sys
 import socket
@@ -38,6 +39,32 @@ import threading
 from datetime import datetime
 import oyaml as yaml
 from docopt import docopt
+
+
+class ConfigData:
+    """ Configuration input data """
+
+    def __init__(self, config):
+        self.config = config
+
+    def configure(self):
+        """ Current configuration return """
+        return self.config
+
+
+class ResultData:
+    """ Agregation and report RESULT data """
+
+    def __init__(self, report_data=''):
+        self.report_data = report_data
+
+    def add(self, newline):
+        """ Agrefation report lines """
+        self.report_data += newline
+
+    def report(self):
+        """ Return conclusion report """
+        return self.report_data
 
 
 def time_now():
@@ -64,8 +91,12 @@ def print_progress_bar(iteration, total,
         fill        - Optional  : progress_bar fill character (Str)
         print_end   - Optional  : end character (e.g. "\r", "\r\n") (Str)
     """
-    percent = ("{0:." + str(decimals) + "f}").format(
-        100 * (iteration / float(total)))
+    try:
+        percent = ("{0:." + str(decimals) + "f}").format(
+            100 * (iteration / float(total)))
+    except ZeroDivisionError:
+        print("Ooops! Something are going wrong!")
+        sys.exit()
     filled_length = int(length * iteration // total)
     progress_bar = fill * filled_length + '-' * (length - filled_length)
 
@@ -88,11 +119,9 @@ def get_config_file():
 def get_config_data(config=get_config_file()):
     """ Getting config data from a YAML file """
 
-    global CONFIG_DB
-
     try:
         with open(config, 'r') as stream:
-            CONFIG_DB = yaml.safe_load(stream)
+            config_db = yaml.safe_load(stream)
     except yaml.YAMLError as exc:
         print(exc)
         sys.exit()
@@ -100,7 +129,7 @@ def get_config_data(config=get_config_file()):
         print("Not found such file or directory: {}".format(config))
         sys.exit()
 
-    return CONFIG_DB
+    return config_db
 
 
 def get_common_data_set(groups_list):
@@ -108,18 +137,19 @@ def get_common_data_set(groups_list):
 
     common_data_set = {}
 
+    config_db = ConfigData(get_config_data()).configure()
     for item in groups_list:
-        added_group = CONFIG_DB.get(item)
-        if not isinstance(added_group, dict):
-            return
-        common_data_set = {**common_data_set, **added_group}
+        added_group = config_db.get(item)
+        if isinstance(added_group, dict):
+            common_data_set = {**common_data_set, **added_group}
     return common_data_set
 
 
 def get_all_hosts_data():
     """ Getting data of all exists host groups """
 
-    groups_list = list(CONFIG_DB.keys())
+    config_db = ConfigData(get_config_data()).configure()
+    groups_list = list(config_db.keys())
     return get_common_data_set(groups_list)
 
 
@@ -133,7 +163,9 @@ def get_specific_groups_data(groups):
 def get_data_by_groups_exclude(excluded_groups):
     """ Obtain data of all groups exclude one or more from them """
 
-    groups_list = list(CONFIG_DB.keys())
+    config_db = ConfigData(get_config_data()).configure()
+
+    groups_list = list(config_db.keys())
     exception_list = excluded_groups.split(',')
     for group in exception_list:
         if group in groups_list:
@@ -155,9 +187,10 @@ def get_data_by_hosts_exclude(excluded_hosts):
 def get_all_groups_list():
     """ Printing list of all exists groups """
 
-    if not CONFIG_DB:
+    config_db = ConfigData(get_config_data()).configure()
+    if not config_db:
         return
-    groups_list = list(CONFIG_DB.keys())
+    groups_list = list(config_db.keys())
     for group in groups_list:
         print(group)
 
@@ -177,8 +210,10 @@ def get_all_hostnames_list(group):
 def get_hosts_list_by_groups_list(groups_list):
     """ Getting list of hostnames by groups list """
 
+    config_db = ConfigData(get_config_data()).configure()
+
     for group in groups_list.split(','):
-        get_all_hostnames_list(CONFIG_DB.get(group))
+        get_all_hostnames_list(config_db.get(group))
 
 
 def get_hosts_list(group_name):
@@ -209,19 +244,15 @@ def get_hosts_list_length(group_name):
 def host_scan(host, ports):
     """ Check sockets for one network host """
 
-    global NETSOCKS_STATUS_REPORT
-
     for port in ports:
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(0.5)
             conn = sock.connect_ex((host, port))
             if conn == 0:
-                NETSOCKS_STATUS_REPORT += (
-                    '{0:<20}{1:>5} open\n'.format(host, port))
+                RESULT.add('{0:<20}{1:>5} open\n'.format(host, port))
             else:
-                NETSOCKS_STATUS_REPORT += (
-                    '{0:<20}{1:>5} closed\n'.format(host, port))
+                RESULT.add('{0:<20}{1:>5} closed\n'.format(host, port))
             sock.close()
         except socket.gaierror:
             print('Hostname could not be resolved.')
@@ -232,9 +263,8 @@ def host_scan(host, ports):
 def ports_scan_hosts_from_database(hosts_list):
     """ Scan ports for one or more hosts from database """
 
-    global NETSOCKS_STATUS_REPORT
-    NETSOCKS_STATUS_REPORT += ('Checked at {}\n'.format(time_now()))
-    NETSOCKS_STATUS_REPORT += ("-" * 30 + "\n")
+    RESULT.add('Checked at {}\n'.format(time_now()))
+    RESULT.add("-" * 30 + "\n")
 
     for host in hosts_list.split(','):
         if host not in get_all_hosts_data():
@@ -242,16 +272,15 @@ def ports_scan_hosts_from_database(hosts_list):
             return
         host_scan(host, get_all_hosts_data().get(host))
 
-        NETSOCKS_STATUS_REPORT += ("-" * 30 + "\n")
-    print(NETSOCKS_STATUS_REPORT)
+        RESULT.add("-" * 30 + "\n")
+    print(RESULT.report())
 
 
 def check_sockets_from_cli(host_cli_arg, ports_cli_arg):
     """ Scan one or more sockets from command line arguments """
 
-    global NETSOCKS_STATUS_REPORT
-    NETSOCKS_STATUS_REPORT += ('Checked at {}\n'.format(time_now()))
-    NETSOCKS_STATUS_REPORT += ("-" * 30 + "\n")
+    RESULT.add('Checked at {}\n'.format(time_now()))
+    RESULT.add("-" * 30 + "\n")
 
     port_list = []
     host = str(host_cli_arg)
@@ -261,20 +290,24 @@ def check_sockets_from_cli(host_cli_arg, ports_cli_arg):
 
     host_scan(host, port_list)
 
-    NETSOCKS_STATUS_REPORT += ("-" * 30 + "\n")
-    print(NETSOCKS_STATUS_REPORT)
+    RESULT.add("-" * 30 + "\n")
+    print(RESULT.report())
 
 
 def main(hosts_list, port_sets_list):
     """ Check sockets status for list of network hosts """
 
-    global NETSOCKS_STATUS_REPORT
-    NETSOCKS_STATUS_REPORT += ('Checked at {}\n'.format(time_now()))
-    NETSOCKS_STATUS_REPORT += ("-" * 30 + "\n")
+    RESULT.add('Checked at {}\n'.format(time_now()))
+    RESULT.add("-" * 30 + "\n")
 
+    config_db = ConfigData(command_line_interface()).configure()
+
+    if not get_hosts_list_length(config_db):
+        print("Group or host name not found in configuration file...")
+        sys.exit()
     # Initial call to print 0% progress
-    print_progress_bar(0, get_hosts_list_length(CONFIG_DB), length=22)
-    for item in range(get_hosts_list_length(CONFIG_DB)):
+    print_progress_bar(0, get_hosts_list_length(config_db), length=22)
+    for item in range(get_hosts_list_length(config_db)):
         try:
             host = hosts_list[item]
             ports = port_sets_list[item]
@@ -282,35 +315,28 @@ def main(hosts_list, port_sets_list):
                 target=host_scan, kwargs={'host': host, 'ports': ports})
             host_scan_threading.start()
             host_scan_threading.join()
-            NETSOCKS_STATUS_REPORT += ("-" * 30 + "\n")
+            RESULT.add("-" * 30 + "\n")
             print_progress_bar(
-                item + 1, get_hosts_list_length(CONFIG_DB), length=22)
+                item + 1, get_hosts_list_length(config_db), length=22)
         except KeyboardInterrupt:
             print("Process interrupted by user...")
             sys.exit()
 
-    print(NETSOCKS_STATUS_REPORT)
+    print(RESULT.report())
 
 
 def command_line_interface(args=docopt(__doc__)):
     """ Command Line Interface """
 
-    global CONFIG_DB
-
-    if not args['-c']:
-        get_config_data()
-    else:
-        get_config_data(args['-c'])
-
     if args['HOST'] and args['PORT']:
         check_sockets_from_cli(args['HOST'], args['PORT'])
         sys.exit()
     elif args['-g']:
-        CONFIG_DB = get_specific_groups_data(args['-g'])
+        config_data = get_specific_groups_data(args['-g'])
     elif args['-X']:
-        CONFIG_DB = get_data_by_groups_exclude(args['-X'])
+        config_data = get_data_by_groups_exclude(args['-X'])
     elif args['-x']:
-        CONFIG_DB = get_data_by_hosts_exclude(args['-x'])
+        config_data = get_data_by_hosts_exclude(args['-x'])
     elif args['-H']:
         ports_scan_hosts_from_database(args['-H'])
         sys.exit()
@@ -321,21 +347,17 @@ def command_line_interface(args=docopt(__doc__)):
         get_all_groups_list()
         sys.exit()
     elif args['-a']:
-        CONFIG_DB = get_all_hosts_data()
+        config_data = get_all_hosts_data()
     else:
         print(__doc__)
         sys.exit()
 
-    return CONFIG_DB
+    return config_data
 
 
 if __name__ == '__main__':
 
-    # Input data set variable
-    CONFIG_DB = {}
-    # Screen output report
-    NETSOCKS_STATUS_REPORT = ''
+    RESULT = ResultData()
+    CONFIG = ConfigData(command_line_interface()).configure()
 
-    command_line_interface()
-
-    main(get_hosts_list(CONFIG_DB), get_ports_list(CONFIG_DB))
+    main(get_hosts_list(CONFIG), get_ports_list(CONFIG))
