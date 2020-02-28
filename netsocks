@@ -41,30 +41,32 @@ import oyaml as yaml
 from docopt import docopt
 
 
-class ConfigData:
-    """ Configuration input data """
+class DataIO:
+    """ I/O gateway for configuration and report """
 
-    def __init__(self, config):
-        self.config = config
+    def __init__(self):
+        self._config = ''
+        self._report = ''
 
-    def configure(self):
-        """ Current configuration return """
-        return self.config
+    @property
+    def config(self):
+        """ Retrun new configuration """
+        return self._config
 
+    @config.setter
+    def config(self, new_config):
+        """ Setting new configuration """
+        self._config = new_config
 
-class ResultData:
-    """ Agregation and report RESULT data """
-
-    def __init__(self, report_data=''):
-        self.report_data = report_data
-
-    def add(self, newline):
-        """ Agrefation report lines """
-        self.report_data += newline
-
+    @property
     def report(self):
         """ Return conclusion report """
-        return self.report_data
+        return self._report
+
+    @report.setter
+    def report(self, newline):
+        """ Agregation report lines """
+        self._report += newline
 
 
 def time_now():
@@ -137,7 +139,7 @@ def get_common_data_set(groups_list):
 
     common_data_set = {}
 
-    config_db = BASE_CONFIG
+    config_db = DATA.config
     for item in groups_list:
         added_group = config_db.get(item)
         if isinstance(added_group, dict):
@@ -148,7 +150,7 @@ def get_common_data_set(groups_list):
 def get_all_hosts_data():
     """ Getting data of all exists host groups """
 
-    config_db = BASE_CONFIG
+    config_db = DATA.config
     groups_list = list(config_db.keys())
     return get_common_data_set(groups_list)
 
@@ -163,7 +165,7 @@ def get_specific_groups_data(groups):
 def get_data_by_groups_exclude(excluded_groups):
     """ Obtain data of all groups exclude one or more from them """
 
-    config_db = BASE_CONFIG
+    config_db = DATA.config
 
     groups_list = list(config_db.keys())
     exception_list = excluded_groups.split(',')
@@ -187,7 +189,7 @@ def get_data_by_hosts_exclude(excluded_hosts):
 def get_all_groups_list():
     """ Printing list of all exists groups """
 
-    config_db = BASE_CONFIG
+    config_db = DATA.config
     if not config_db:
         return
     groups_list = list(config_db.keys())
@@ -210,7 +212,7 @@ def get_all_hostnames_list(group):
 def get_hosts_list_by_groups_list(groups_list):
     """ Getting list of hostnames by groups list """
 
-    config_db = BASE_CONFIG
+    config_db = DATA.config
 
     for group in groups_list.split(','):
         get_all_hostnames_list(config_db.get(group))
@@ -250,9 +252,9 @@ def host_scan(host, ports):
             sock.settimeout(0.5)
             conn = sock.connect_ex((host, port))
             if conn == 0:
-                RESULT.add('{0:<20}{1:>5} open\n'.format(host, port))
+                DATA.report = ('{0:<20}{1:>5} open\n'.format(host, port))
             else:
-                RESULT.add('{0:<20}{1:>5} closed\n'.format(host, port))
+                DATA.report = ('{0:<20}{1:>5} closed\n'.format(host, port))
             sock.close()
         except socket.gaierror:
             print('Hostname could not be resolved.')
@@ -263,8 +265,8 @@ def host_scan(host, ports):
 def ports_scan_hosts_from_database(hosts_list):
     """ Scan ports for one or more hosts from database """
 
-    RESULT.add('Checked at {}\n'.format(time_now()))
-    RESULT.add("-" * 30 + "\n")
+    DATA.report = ('Checked at {}\n'.format(time_now()))
+    DATA.report = ("-" * 30 + "\n")
 
     for host in hosts_list.split(','):
         if host not in get_all_hosts_data():
@@ -272,15 +274,15 @@ def ports_scan_hosts_from_database(hosts_list):
             return
         host_scan(host, get_all_hosts_data().get(host))
 
-        RESULT.add("-" * 30 + "\n")
-    print(RESULT.report())
+        DATA.report = ("-" * 30 + "\n")
+    print(DATA.report)
 
 
 def check_sockets_from_cli(host_cli_arg, ports_cli_arg):
     """ Scan one or more sockets from command line arguments """
 
-    RESULT.add('Checked at {}\n'.format(time_now()))
-    RESULT.add("-" * 30 + "\n")
+    DATA.report = ('Checked at {}\n'.format(time_now()))
+    DATA.report = ("-" * 30 + "\n")
 
     port_list = []
     host = str(host_cli_arg)
@@ -290,15 +292,15 @@ def check_sockets_from_cli(host_cli_arg, ports_cli_arg):
 
     host_scan(host, port_list)
 
-    RESULT.add("-" * 30 + "\n")
-    print(RESULT.report())
+    DATA.report = ("-" * 30 + "\n")
+    print(DATA.report)
 
 
 def main(hosts_list, port_sets_list):
     """ Check sockets status for list of network hosts """
 
-    RESULT.add('Checked at {}\n'.format(time_now()))
-    RESULT.add("-" * 30 + "\n")
+    DATA.report = ('Checked at {}\n'.format(time_now()))
+    DATA.report = ("-" * 30 + "\n")
 
     config_db = CURRENTLY_CONFIG
 
@@ -315,18 +317,23 @@ def main(hosts_list, port_sets_list):
                 target=host_scan, kwargs={'host': host, 'ports': ports})
             host_scan_threading.start()
             host_scan_threading.join()
-            RESULT.add("-" * 30 + "\n")
+            DATA.report = ("-" * 30 + "\n")
             print_progress_bar(
                 item + 1, get_hosts_list_length(config_db), length=22)
         except KeyboardInterrupt:
             print("Process interrupted by user...")
             sys.exit()
 
-    print(RESULT.report())
+    print(DATA.report)
 
 
 def command_line_interface(args=docopt(__doc__)):
     """ Command Line Interface """
+
+    if not args['-c']:
+        DATA.config = get_config_data()
+    else:
+        DATA.config = get_config_data(args['-c'])
 
     if args['HOST'] and args['PORT']:
         check_sockets_from_cli(args['HOST'], args['PORT'])
@@ -357,14 +364,7 @@ def command_line_interface(args=docopt(__doc__)):
 
 if __name__ == '__main__':
 
-    ARGS = docopt(__doc__)
-
-    if not ARGS['-c']:
-        BASE_CONFIG = ConfigData(get_config_data()).configure()
-    else:
-        BASE_CONFIG = ConfigData(get_config_data(ARGS['-c'])).configure()
-
-    RESULT = ResultData()
-    CURRENTLY_CONFIG = ConfigData(command_line_interface()).configure()
+    DATA = DataIO()
+    CURRENTLY_CONFIG = command_line_interface()
 
     main(get_hosts_list(CURRENTLY_CONFIG), get_ports_list(CURRENTLY_CONFIG))
