@@ -1,9 +1,20 @@
 # netsocks
 
 Simple network socket status checker.</br>
-It is checking list of TCP/IP sockets loaded from file `netsocks.yml`.</br>
-It has to locate in same directory where you are keeping the script.</br>
+It is checking list of TCP/IP sockets loaded from file `~/.config/netsocks.yml`.</br>
+Config file will be created at first boot time.</br>
+**Default config example:**
 
+```sh
+$ cat ~/.config/netsocks.yml 
+google:
+  google.com:
+  - 80
+  - 443
+    gmail.com:
+  - 80
+  - 443
+```
 **Requirements: Python>=3.7.1, oyaml>=0.9, docopt>=0.6.2.**
 
 ```sh
